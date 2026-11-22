@@ -1,0 +1,70 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Neon Arena</title>
+<style>
+  :root {
+    --bg: #07070c; --panel: #10101a; --line: #2a2a40;
+    --fg: #ececf4; --dim: #8b8ba3; --accent: #ff2e88;
+    --font: ui-monospace, "Cascadia Mono", Consolas, monospace;
+  }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; height: 100%; background: var(--bg); color: var(--fg); font-family: var(--font); overflow: hidden; }
+  canvas { position: fixed; inset: 0; width: 100%; height: 100%; display: block; cursor: none; }
+  #lobby {
+    position: fixed; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center;
+    gap: 14px; background: radial-gradient(circle at 50% 40%, #1a0b18 0%, var(--bg) 70%); z-index: 2; padding: 16px;
+  }
+  h1 { margin: 0 0 18px; font-size: clamp(36px, 8vw, 72px); letter-spacing: .12em; font-weight: 800;
+       color: var(--accent); text-shadow: 0 0 18px var(--accent), 0 0 42px #ff2e8866; }
+  h1 span { color: var(--fg); text-shadow: 0 0 14px #ffffff55; margin-left: .3em; }
+  input, button { font: inherit; font-size: 16px; border-radius: 6px; border: 1px solid var(--line);
+                  background: var(--panel); color: var(--fg); padding: 11px 14px; outline: none; }
+  input:focus { border-color: var(--accent); box-shadow: 0 0 0 2px #ff2e8833; }
+  button { cursor: pointer; border-color: var(--accent); color: var(--accent); transition: background .15s, color .15s; }
+  button:hover { background: var(--accent); color: var(--bg); box-shadow: 0 0 16px #ff2e8888; }
+  #name { width: 280px; text-align: center; }
+  #create { width: 280px; }
+  .row { display: flex; gap: 8px; width: 280px; }
+  #code { flex: 1; min-width: 0; text-transform: uppercase; text-align: center; letter-spacing: .3em; }
+  .or { color: var(--dim); font-size: 13px; }
+  #status { min-height: 1.4em; color: var(--accent); margin: 4px 0 0; text-align: center; }
+  .help { color: var(--dim); font-size: 13px; text-align: center; max-width: 520px; line-height: 1.7; margin-top: 18px; }
+  #room { position: fixed; left: 12px; bottom: 12px; z-index: 1; display: flex; align-items: center; gap: 10px;
+          font-size: 13px; color: var(--dim); }
+  #room b { color: var(--fg); letter-spacing: .2em; }
+  #room button { font-size: 12px; padding: 5px 10px; }
+  [hidden] { display: none !important; }
+</style>
+</head>
+<body>
+<canvas id="c"></canvas>
+
+<div id="lobby">
+  <h1>NEON<span>ARENA</span></h1>
+  <input id="name" maxlength="12" placeholder="Твоё имя" autocomplete="off">
+  <button id="create">Создать комнату</button>
+  <div class="or">или войди по коду</div>
+  <div class="row">
+    <input id="code" maxlength="4" placeholder="КОД" autocomplete="off">
+    <button id="join">Войти</button>
+  </div>
+  <p id="status"></p>
+  <p class="help">
+    WASD — движение · мышь — прицел · ЛКМ — стрельба<br>
+    Пробел / Shift — рывок · M — звук вкл/выкл<br>
+    До 4 игроков · 15 убийств или 3 минуты
+  </p>
+</div>
+
+<div id="room" hidden>
+  Комната <b id="roomCode"></b>
+  <button id="copy">Скопировать ссылку</button>
+</div>
+
+<script src="https://unpkg.com/peerjs@1.5.4/dist/peerjs.min.js"></script>
+<script src="game.js"></script>
+</body>
+</html>

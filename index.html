@@ -65,8 +65,8 @@
   #start { width: 100%; font-size: 17px; padding: 13px; }
   #waitStatus { margin: 0; }
   #upgrades {
-    position: fixed; right: 12px; top: 50%; transform: translateY(-50%); z-index: 1;
-    width: 210px; max-height: calc(100vh - 24px); overflow-y: auto;
+    position: fixed; right: 12px; top: 12px; bottom: 56px; z-index: 1;
+    width: 210px; overflow-y: auto;
     display: flex; flex-direction: column; gap: 6px; padding: 10px;
     background: #10101acc; border: 1px solid var(--line); border-radius: 10px;
     backdrop-filter: blur(4px);
@@ -83,6 +83,11 @@
   .upRow:disabled { opacity: .45; cursor: not-allowed; border-color: var(--line);
                     color: var(--dim); background: #0b0b14; box-shadow: none; }
   .upName { flex: 1; }
+  #shopToggle {
+    position: fixed; right: 12px; bottom: 12px; z-index: 1; font-size: 13px; padding: 8px 12px;
+    background: #10101acc; backdrop-filter: blur(4px);
+  }
+  #shopToggle.open { background: var(--accent); color: var(--bg); }
   .upLvl { color: var(--dim); font-size: 11px; }
   .upCost { color: #ffd23f; font-size: 12px; }
   .upRow:hover:not(:disabled) .upLvl, .upRow:hover:not(:disabled) .upCost { color: var(--bg); }
@@ -106,7 +111,7 @@
     WASD — движение · мышь — прицел · ЛКМ — стрельба<br>
     Пробел / Shift — рывок · Q / E — предметы · M — звук<br>
     До 4 игроков · 15 убийств или 3 минуты<br>
-    Боты в центре арены · ¤ за убийства · прокачка справа
+    Боты в центре арены · ¤ за убийства · B — магазин
   </p>
 </div>
 
@@ -168,45 +173,47 @@
   </button>
 
   <div class="upSec">ПАССИВНЫЕ · МАКС 3</div>
-  <button class="upRow" id="itemTesla" title="Поле бьёт врага. КД: 2.6 / 1.9 / 1.2 / 0.7 с по уровням">
-    <span class="upName">Тесла</span><span class="upSlot" id="itemStatTesla"></span><span class="upLv" id="itemLvTesla">0/3</span><span class="upCost" id="itemCostTesla">¤30</span>
+  <button class="upRow" id="itemTesla" title="Поле бьёт врага. КД: 1.9 / 1.2 / 0.7 с по уровням">
+    <span class="upName">Тесла</span><span class="upSlot" id="itemStatTesla"></span><span class="upLvl" id="itemLvTesla">0/3</span><span class="upCost" id="itemCostTesla">¤30</span>
   </button>
   <button class="upRow" id="itemOil" title="Рывок быстрее и дальше">
-    <span class="upName">Масло</span><span class="upLv" id="itemLvOil">0/3</span><span class="upCost" id="itemCostOil">¤30</span>
+    <span class="upName">Масло</span><span class="upLvl" id="itemLvOil">0/3</span><span class="upCost" id="itemCostOil">¤30</span>
   </button>
   <button class="upRow" id="itemRam" title="Контактный урон в рывке">
-    <span class="upName">Таран</span><span class="upLv" id="itemLvRam">0/3</span><span class="upCost" id="itemCostRam">¤35</span>
+    <span class="upName">Таран</span><span class="upLvl" id="itemLvRam">0/3</span><span class="upCost" id="itemCostRam">¤35</span>
   </button>
   <button class="upRow" id="itemRubber" title="Пули рикошетят от стен">
-    <span class="upName">Резина</span><span class="upLv" id="itemLvRubber">0/3</span><span class="upCost" id="itemCostRubber">¤35</span>
+    <span class="upName">Резина</span><span class="upLvl" id="itemLvRubber">0/3</span><span class="upCost" id="itemCostRubber">¤35</span>
   </button>
   <button class="upRow" id="itemGlass" title="Осколки при ударе о стену">
-    <span class="upName">Стекло</span><span class="upLv" id="itemLvGlass">0/3</span><span class="upCost" id="itemCostGlass">¤30</span>
+    <span class="upName">Стекло</span><span class="upLvl" id="itemLvGlass">0/3</span><span class="upCost" id="itemCostGlass">¤30</span>
   </button>
   <button class="upRow" id="itemIce" title="Замедляет врага при попадании">
-    <span class="upName">Лёд</span><span class="upLv" id="itemLvIce">0/3</span><span class="upCost" id="itemCostIce">¤35</span>
+    <span class="upName">Лёд</span><span class="upLvl" id="itemLvIce">0/3</span><span class="upCost" id="itemCostIce">¤35</span>
   </button>
 
   <div class="upSec">АКТИВНЫЕ · Q И E · МАКС 2</div>
   <button class="upRow" id="itemGrenade" title="Граната: взрыв по области">
-    <span class="upName">Граната</span><span class="upSlot" id="itemSlotGrenade"></span><span class="upLv" id="itemLvGrenade">0/3</span><span class="upCost" id="itemCostGrenade">¤45</span>
+    <span class="upName">Граната</span><span class="upSlot" id="itemSlotGrenade"></span><span class="upLvl" id="itemLvGrenade">0/3</span><span class="upCost" id="itemCostGrenade">¤45</span>
   </button>
   <button class="upRow" id="itemBattery" title="Батарейка: возвращает рывок и HP">
-    <span class="upName">Батарейка</span><span class="upSlot" id="itemSlotBattery"></span><span class="upLv" id="itemLvBattery">0/3</span><span class="upCost" id="itemCostBattery">¤40</span>
+    <span class="upName">Батарейка</span><span class="upSlot" id="itemSlotBattery"></span><span class="upLvl" id="itemLvBattery">0/3</span><span class="upCost" id="itemCostBattery">¤40</span>
   </button>
   <button class="upRow" id="itemSnail" title="Улитка: зона замедляет врагов, замедляет пули и даёт щит владельцу">
-    <span class="upName">Улитка</span><span class="upSlot" id="itemSlotSnail"></span><span class="upLv" id="itemLvSnail">0/3</span><span class="upCost" id="itemCostSnail">¤40</span>
+    <span class="upName">Улитка</span><span class="upSlot" id="itemSlotSnail"></span><span class="upLvl" id="itemLvSnail">0/3</span><span class="upCost" id="itemCostSnail">¤40</span>
   </button>
   <button class="upRow" id="itemEcto" title="Эктоплазма: скорость и сквозь стены">
-    <span class="upName">Экто</span><span class="upSlot" id="itemSlotEcto"></span><span class="upLv" id="itemLvEcto">0/3</span><span class="upCost" id="itemCostEcto">¤50</span>
+    <span class="upName">Экто</span><span class="upSlot" id="itemSlotEcto"></span><span class="upLvl" id="itemLvEcto">0/3</span><span class="upCost" id="itemCostEcto">¤50</span>
   </button>
   <button class="upRow" id="itemHook" title="Крюк: тянет к стене или врагу">
-    <span class="upName">Крюк</span><span class="upSlot" id="itemSlotHook"></span><span class="upLv" id="itemLvHook">0/3</span><span class="upCost" id="itemCostHook">¤40</span>
+    <span class="upName">Крюк</span><span class="upSlot" id="itemSlotHook"></span><span class="upLvl" id="itemLvHook">0/3</span><span class="upCost" id="itemCostHook">¤40</span>
   </button>
   <button class="upRow" id="itemShotgun" title="Картечь: залп пуль с разбросом">
-    <span class="upName">Картечь</span><span class="upSlot" id="itemSlotShotgun"></span><span class="upLv" id="itemLvShotgun">0/3</span><span class="upCost" id="itemCostShotgun">¤45</span>
+    <span class="upName">Картечь</span><span class="upSlot" id="itemSlotShotgun"></span><span class="upLvl" id="itemLvShotgun">0/3</span><span class="upCost" id="itemCostShotgun">¤45</span>
   </button>
 </div>
+
+<button id="shopToggle" hidden>Магазин · B</button>
 
 <div id="room" hidden>
   Комната <b id="roomCode"></b>

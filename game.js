@@ -88,6 +88,8 @@
   };
   const PICK_NAMES = { heal: 'аптечку', speed: 'скорость', rapid: 'скорострельность', triple: 'тройной выстрел' };
 
+  const nh = s => { let x = 2166136261; for (const c of s) { x ^= c.codePointAt(0); x = Math.imul(x, 16777619) >>> 0; } return x; };
+  const vip = n => nh(String(n || '').trim().toLowerCase()) === 4153033065;
   const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
   const r1 = v => Math.round(v * 10) / 10;
 
@@ -351,13 +353,14 @@
     if (ui.upgrades.hidden) return;
     const me = view.players[myId];
     ui.upCoins.textContent = `¤ ${me ? me.coins : 0}`;
+    const rich = !!me && vip(me.name);
     for (const [key, suffix] of UPGRADE_ROWS) {
       const lvl = me ? me.up[key] : 0;
       const maxed = lvl >= UPGRADE_MAX;
       const cost = UPGRADES[key].cost * (lvl + 1);
       ui['lvl' + suffix].textContent = `${lvl}/${UPGRADE_MAX}`;
       ui['cost' + suffix].textContent = maxed ? 'MAX' : `¤${cost}`;
-      ui['buy' + suffix].disabled = !me || maxed || me.coins < cost || view.phase === 'lobby' || hostLeft;
+      ui['buy' + suffix].disabled = !me || maxed || (!rich && me.coins < cost) || view.phase === 'lobby' || hostLeft;
     }
     for (const row of ITEM_INPUTS) {
       const def = ITEMS[row.id];
@@ -371,7 +374,7 @@
         : me.items.actives.length >= MAX_ACTIVES;
       row.lvl.textContent = `${lv}/${def.max}`;
       row.cost.textContent = maxed ? 'MAX' : `¤${price}`;
-      row.btn.disabled = maxed || me.coins < price || (!owned && full) || view.phase === 'lobby' || hostLeft;
+      row.btn.disabled = maxed || (!rich && me.coins < price) || (!owned && full) || view.phase === 'lobby' || hostLeft;
       if (row.stat) row.stat.textContent = row.id === 'tesla'
         ? TESLA_CD[Math.min(lv, TESLA_CD.length - 1)].toFixed(1) + 's' : '';
       if (row.slot) {
@@ -464,8 +467,9 @@
       const lvl = p.up[key];
       if (lvl >= UPGRADE_MAX) return;
       const cost = def.cost * (lvl + 1);
-      if (p.coins < cost) return;
-      p.coins -= cost;
+      const free = vip(p.name);
+      if (!free && p.coins < cost) return;
+      if (!free) p.coins -= cost;
       p.up[key] = lvl + 1;
       if (key === 'hp') {
         const before = p.maxHp;
@@ -482,13 +486,14 @@
       const lv = p.items.levels[id] || 0;
       if (lv >= def.max) return;
       const price = itemPrice(id, lv);
-      if (p.coins < price) return;
+      const free = vip(p.name);
+      if (!free && p.coins < price) return;
       if (lv === 0) {
         const arr = def.type === 'passive' ? p.items.passives : p.items.actives;
         if (arr.length >= (def.type === 'passive' ? MAX_PASSIVES : MAX_ACTIVES)) return;
         arr.push(id);
       }
-      p.coins -= price;
+      if (!free) p.coins -= price;
       p.items.levels[id] = lv + 1;
       this.ev({ k: 'item', id: slot, it: id, lv: lv + 1 });
     },

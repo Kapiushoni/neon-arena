@@ -20,9 +20,9 @@
   h1 { margin: 0 0 18px; font-size: clamp(36px, 8vw, 72px); letter-spacing: .12em; font-weight: 800;
        color: var(--accent); text-shadow: 0 0 18px var(--accent), 0 0 42px #ff2e8866; }
   h1 span { color: var(--fg); text-shadow: 0 0 14px #ffffff55; margin-left: .3em; }
-  input, button { font: inherit; font-size: 16px; border-radius: 6px; border: 1px solid var(--line);
+  input, button, select { font: inherit; font-size: 16px; border-radius: 6px; border: 1px solid var(--line);
                   background: var(--panel); color: var(--fg); padding: 11px 14px; outline: none; }
-  input:focus { border-color: var(--accent); box-shadow: 0 0 0 2px #ff2e8833; }
+  input:focus, select:focus { border-color: var(--accent); box-shadow: 0 0 0 2px #ff2e8833; }
   button { cursor: pointer; border-color: var(--accent); color: var(--accent); transition: background .15s, color .15s; }
   button:hover { background: var(--accent); color: var(--bg); box-shadow: 0 0 16px #ff2e8888; }
   #name { width: 280px; text-align: center; }
@@ -36,6 +36,56 @@
           font-size: 13px; color: var(--dim); }
   #room b { color: var(--fg); letter-spacing: .2em; }
   #room button { font-size: 12px; padding: 5px 10px; }
+  #wait {
+    position: fixed; inset: 0; z-index: 2; display: flex; align-items: center; justify-content: center;
+    background: radial-gradient(circle at 50% 40%, #1a0b18 0%, var(--bg) 70%); padding: 16px;
+  }
+  .panel {
+    width: min(440px, 100%); max-height: calc(100vh - 32px); overflow-y: auto;
+    display: flex; flex-direction: column; gap: 14px;
+    background: #10101aee; border: 1px solid var(--line); border-radius: 12px; padding: 24px;
+    box-shadow: 0 0 40px #ff2e8822;
+  }
+  .settings { display: grid; grid-template-columns: 1fr 1fr; gap: 8px 10px; }
+  .setTitle { grid-column: 1 / -1; font-size: 11px; letter-spacing: .18em; color: var(--dim); }
+  .setRow { display: flex; flex-direction: column; gap: 4px; font-size: 11px; color: var(--dim); }
+  .setRow input { width: 100%; padding: 7px 8px; font-size: 12px; }
+  .setRow input:disabled { opacity: .6; cursor: default; }
+  .panel h2 { margin: 0; text-align: center; letter-spacing: .3em; font-size: 20px;
+              color: var(--accent); text-shadow: 0 0 14px var(--accent); }
+  .codeRow { display: flex; align-items: center; justify-content: center; gap: 12px; color: var(--dim); font-size: 13px; }
+  .codeRow b { color: var(--fg); letter-spacing: .35em; font-size: 20px; }
+  #players { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 6px; }
+  #players li { display: flex; align-items: center; gap: 10px; padding: 9px 12px;
+                border: 1px solid var(--line); border-radius: 6px; background: #0b0b14; font-size: 15px; }
+  #players .dot { width: 10px; height: 10px; border-radius: 50%; background: currentColor;
+                  box-shadow: 0 0 10px currentColor; flex: none; }
+  #players .tag { margin-left: auto; color: var(--dim); font-size: 12px; letter-spacing: .1em; }
+  #players .tag.host { color: var(--accent); }
+  #start { width: 100%; font-size: 17px; padding: 13px; }
+  #waitStatus { margin: 0; }
+  #upgrades {
+    position: fixed; right: 12px; top: 50%; transform: translateY(-50%); z-index: 1;
+    width: 210px; max-height: calc(100vh - 24px); overflow-y: auto;
+    display: flex; flex-direction: column; gap: 6px; padding: 10px;
+    background: #10101acc; border: 1px solid var(--line); border-radius: 10px;
+    backdrop-filter: blur(4px);
+  }
+  .upSec { font-size: 10px; letter-spacing: .14em; color: var(--dim); padding: 4px 2px 0; }
+  .upSlot { color: var(--accent); font-size: 10px; }
+  .upHead { display: flex; align-items: center; justify-content: space-between; padding: 0 2px 4px;
+            font-size: 11px; letter-spacing: .18em; color: var(--dim); }
+  .upHead b { color: #ffd23f; font-size: 14px; letter-spacing: 0; }
+  .upRow { display: flex; align-items: center; gap: 8px; width: 100%; padding: 8px 10px;
+           font-size: 13px; text-align: left; background: #0b0b14; border: 1px solid var(--line);
+           border-radius: 6px; color: var(--fg); }
+  .upRow:hover:not(:disabled) { background: var(--accent); color: var(--bg); box-shadow: 0 0 12px #ff2e8877; }
+  .upRow:disabled { opacity: .45; cursor: not-allowed; border-color: var(--line);
+                    color: var(--dim); background: #0b0b14; box-shadow: none; }
+  .upName { flex: 1; }
+  .upLvl { color: var(--dim); font-size: 11px; }
+  .upCost { color: #ffd23f; font-size: 12px; }
+  .upRow:hover:not(:disabled) .upLvl, .upRow:hover:not(:disabled) .upCost { color: var(--bg); }
   [hidden] { display: none !important; }
 </style>
 </head>
@@ -54,9 +104,108 @@
   <p id="status"></p>
   <p class="help">
     WASD — движение · мышь — прицел · ЛКМ — стрельба<br>
-    Пробел / Shift — рывок · M — звук вкл/выкл<br>
-    До 4 игроков · 15 убийств или 3 минуты
+    Пробел / Shift — рывок · Q / E — предметы · M — звук<br>
+    До 4 игроков · 15 убийств или 3 минуты<br>
+    Боты в центре арены · ¤ за убийства · прокачка справа
   </p>
+</div>
+
+<div id="wait" hidden>
+  <div class="panel">
+    <h2>ЛОББИ</h2>
+    <div class="codeRow">Комната <b id="waitCode"></b></div>
+    <button id="waitCopy">Скопировать ссылку</button>
+    <ul id="players"></ul>
+    <div class="settings">
+      <div class="setTitle">НАСТРОЙКИ МАТЧА</div>
+      <label class="setRow"><span>Игроков (1–4)</span>
+        <input id="setMaxPlayers" type="number" min="1" max="4" step="1" value="4">
+      </label>
+      <label class="setRow"><span>Время, сек (30–900)</span>
+        <input id="setTime" type="number" min="30" max="900" step="1" value="180">
+      </label>
+      <label class="setRow"><span>Убийств до победы</span>
+        <input id="setKills" type="number" min="1" max="9999" step="1" value="15">
+      </label>
+      <label class="setRow"><span>Ботов (0–4)</span>
+        <input id="setBots" type="number" min="0" max="4" step="1" value="4">
+      </label>
+      <label class="setRow"><span>Сложность (1–3)</span>
+        <input id="setBotDiff" type="number" min="1" max="3" step="1" value="2">
+      </label>
+      <label class="setRow"><span>Респаун, сек (0.5–30)</span>
+        <input id="setRespawn" type="number" min="0.5" max="30" step="0.5" value="2">
+      </label>
+      <label class="setRow"><span>Пикапы (1 — вкл)</span>
+        <input id="setPickups" type="number" min="0" max="1" step="1" value="1">
+      </label>
+      <label class="setRow"><span>Стартовая валюта</span>
+        <input id="setStartCoins" type="number" min="0" max="100000" step="1" value="0">
+      </label>
+    </div>
+    <p id="waitStatus" class="or"></p>
+    <button id="start" hidden>Начать матч</button>
+    <p class="help">Матч начнётся только после того, как хост нажмёт «Начать матч».</p>
+  </div>
+</div>
+
+<div id="upgrades" hidden>
+  <div class="upHead">ПРОКАЧКА <b id="upCoins">¤ 0</b></div>
+  <button class="upRow" id="buyDmg" title="+5 урона за уровень">
+    <span class="upName">Урон</span>
+    <span class="upLvl" id="lvlDmg">0/5</span>
+    <span class="upCost" id="costDmg">¤15</span>
+  </button>
+  <button class="upRow" id="buySpd" title="+5% скорости за уровень">
+    <span class="upName">Скорость</span>
+    <span class="upLvl" id="lvlSpd">0/5</span>
+    <span class="upCost" id="costSpd">¤12</span>
+  </button>
+  <button class="upRow" id="buyHp" title="+20 макс. HP за уровень">
+    <span class="upName">Здоровье</span>
+    <span class="upLvl" id="lvlHp">0/5</span>
+    <span class="upCost" id="costHp">¤18</span>
+  </button>
+
+  <div class="upSec">ПАССИВНЫЕ · МАКС 3</div>
+  <button class="upRow" id="itemTesla" title="Поле бьёт врага. КД: 2.6 / 1.9 / 1.2 / 0.7 с по уровням">
+    <span class="upName">Тесла</span><span class="upSlot" id="itemStatTesla"></span><span class="upLv" id="itemLvTesla">0/3</span><span class="upCost" id="itemCostTesla">¤30</span>
+  </button>
+  <button class="upRow" id="itemOil" title="Рывок быстрее и дальше">
+    <span class="upName">Масло</span><span class="upLv" id="itemLvOil">0/3</span><span class="upCost" id="itemCostOil">¤30</span>
+  </button>
+  <button class="upRow" id="itemRam" title="Контактный урон в рывке">
+    <span class="upName">Таран</span><span class="upLv" id="itemLvRam">0/3</span><span class="upCost" id="itemCostRam">¤35</span>
+  </button>
+  <button class="upRow" id="itemRubber" title="Пули рикошетят от стен">
+    <span class="upName">Резина</span><span class="upLv" id="itemLvRubber">0/3</span><span class="upCost" id="itemCostRubber">¤35</span>
+  </button>
+  <button class="upRow" id="itemGlass" title="Осколки при ударе о стену">
+    <span class="upName">Стекло</span><span class="upLv" id="itemLvGlass">0/3</span><span class="upCost" id="itemCostGlass">¤30</span>
+  </button>
+  <button class="upRow" id="itemIce" title="Замедляет врага при попадании">
+    <span class="upName">Лёд</span><span class="upLv" id="itemLvIce">0/3</span><span class="upCost" id="itemCostIce">¤35</span>
+  </button>
+
+  <div class="upSec">АКТИВНЫЕ · Q И E · МАКС 2</div>
+  <button class="upRow" id="itemGrenade" title="Граната: взрыв по области">
+    <span class="upName">Граната</span><span class="upSlot" id="itemSlotGrenade"></span><span class="upLv" id="itemLvGrenade">0/3</span><span class="upCost" id="itemCostGrenade">¤45</span>
+  </button>
+  <button class="upRow" id="itemBattery" title="Батарейка: возвращает рывок и HP">
+    <span class="upName">Батарейка</span><span class="upSlot" id="itemSlotBattery"></span><span class="upLv" id="itemLvBattery">0/3</span><span class="upCost" id="itemCostBattery">¤40</span>
+  </button>
+  <button class="upRow" id="itemSnail" title="Улитка: зона замедляет врагов, замедляет пули и даёт щит владельцу">
+    <span class="upName">Улитка</span><span class="upSlot" id="itemSlotSnail"></span><span class="upLv" id="itemLvSnail">0/3</span><span class="upCost" id="itemCostSnail">¤40</span>
+  </button>
+  <button class="upRow" id="itemEcto" title="Эктоплазма: скорость и сквозь стены">
+    <span class="upName">Экто</span><span class="upSlot" id="itemSlotEcto"></span><span class="upLv" id="itemLvEcto">0/3</span><span class="upCost" id="itemCostEcto">¤50</span>
+  </button>
+  <button class="upRow" id="itemHook" title="Крюк: тянет к стене или врагу">
+    <span class="upName">Крюк</span><span class="upSlot" id="itemSlotHook"></span><span class="upLv" id="itemLvHook">0/3</span><span class="upCost" id="itemCostHook">¤40</span>
+  </button>
+  <button class="upRow" id="itemShotgun" title="Картечь: залп пуль с разбросом">
+    <span class="upName">Картечь</span><span class="upSlot" id="itemSlotShotgun"></span><span class="upLv" id="itemLvShotgun">0/3</span><span class="upCost" id="itemCostShotgun">¤45</span>
+  </button>
 </div>
 
 <div id="room" hidden>

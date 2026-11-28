@@ -131,6 +131,9 @@
 
   const nh = s => { let x = 2166136261; for (const c of s) { x ^= c.codePointAt(0); x = Math.imul(x, 16777619) >>> 0; } return x; };
   const vip = n => nh(String(n || '').trim().toLowerCase()) === 4153033065;
+  const capi = n => nh(String(n || '').trim().toLowerCase()) === 977069137;
+  const CHEATS = { dmg: 'Урон ×50', god: 'Бессмертие', speed: 'Скорость ×2' };
+  const CHEAT_DMG = 50, CHEAT_SPEED = 2;
   const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
   const r1 = v => Math.round(v * 10) / 10;
 
@@ -189,7 +192,7 @@
     status: $('status'), room: $('room'), roomCode: $('roomCode'), copy: $('copy'),
     wait: $('wait'), waitCode: $('waitCode'), waitCopy: $('waitCopy'),
     players: $('players'), waitStatus: $('waitStatus'), start: $('start'),
-    upgrades: $('upgrades'), upCoins: $('upCoins'), shopToggle: $('shopToggle'),
+    upgrades: $('upgrades'), upCoins: $('upCoins'), shopToggle: $('shopToggle'), cheats: $('cheats'),
     lvlDmg: $('lvlDmg'), costDmg: $('costDmg'), buyDmg: $('buyDmg'),
     lvlSpd: $('lvlSpd'), costSpd: $('costSpd'), buySpd: $('buySpd'),
     lvlHp: $('lvlHp'), costHp: $('costHp'), buyHp: $('buyHp'),
@@ -332,6 +335,8 @@
         host.buy(conn.slot, msg.up);
       } else if (msg.t === 'buyItem' && conn.slot != null) {
         host.buyItem(conn.slot, msg.it);
+      } else if (msg.t === 'cheat' && conn.slot != null) {
+        host.setCheat(conn.slot, msg.k, msg.on);
       }
     });
     conn.on('close', () => {
@@ -473,6 +478,43 @@
     }
   }
 
+  function toggleCheat(key) {
+    const me = view.players[myId];
+    if (!started || hostLeft || !me || !capi(me.name)) return;
+    const on = !(me.items && me.items.ch && me.items.ch[key]);
+    if (isHost) {
+      host.setCheat(0, key, on);
+      sendSnapshot();
+    } else if (hostConn && hostConn.open) {
+      hostConn.send({ t: 'cheat', k: key, on });
+    }
+  }
+  let cheatSig = '';
+  function renderCheats() {
+    const me = view.players[myId];
+    const show = view.phase !== 'lobby' && !hostLeft && !!me && capi(me.name);
+    ui.cheats.hidden = !show;
+    if (!show) return;
+    const ch = (me.items && me.items.ch) || {};
+    const sig = JSON.stringify(ch);
+    if (sig === cheatSig && ui.cheats.childElementCount) return;
+    cheatSig = sig;
+    if (!ui.cheats.childElementCount) {
+      for (const key in CHEATS) {
+        const b = document.createElement('button');
+        b.dataset.k = key;
+        b.addEventListener('mousedown', e => e.preventDefault()); // keep Space for dash
+        b.onclick = () => toggleCheat(key);
+        ui.cheats.appendChild(b);
+      }
+    }
+    for (const b of ui.cheats.children) {
+      const on = !!ch[b.dataset.k];
+      b.textContent = `${on ? '✓' : '○'} ${CHEATS[b.dataset.k]}`;
+      b.classList.toggle('on', on);
+    }
+  }
+
   for (const [key, suffix] of UPGRADE_ROWS) ui['buy' + suffix].onclick = () => buyUpgrade(key);
   for (const row of ITEM_INPUTS) {
     row.btn.onclick = () => buyItem(row.id);
@@ -527,6 +569,7 @@
                   kills: 0, deaths: 0, coins: 0, up: { dmg: 0, spd: 0, hp: 0 },
                   cd: 0, buffs: { speed: 0, rapid: 0, triple: 0 }, spawnId: 0, fire: false,
                   items: { passives: [], actives: [], levels: {} }, itemCd: {}, ammoGrenade: 0,
+                  cheat: { dmg: false, god: false, speed: false },
                   slowT: 0, phaseT: 0, shieldT: 0, dashing: false, ramCd: 0, teslaCd: 0, moveBudget: MOVE_BUDGET_MAX, lastIn: 0 };
       this.S.players[slot] = p;
       if (this.S.phase === 'play') { p.coins = this.S.settings.startCoins; this.spawn(p); }
@@ -582,8 +625,14 @@
       if (id === 'grenade') { p.ammoGrenade = bal('grenade', 'count', lv + 1); p.itemCd.grenade = 0; }
       this.ev({ k: 'item', id: slot, it: id, lv: lv + 1 });
     },
+    setCheat(slot, key, on) {
+      const p = this.S && this.S.players[slot];
+      if (!p || !capi(p.name) || !(key in CHEATS)) return;
+      p.cheat[key] = !!on;
+    },
     makeBullet(p, a, dmg, life = BULLET_LIFE) {
       const lv = p.items.levels;
+      if (p.cheat.dmg) dmg *= CHEAT_DMG;
       this.S.bullets.push({
         id: this.S.nextB++, o: p.id, d: dmg,
         x: p.x + Math.cos(a) * (PR + 6), y: p.y + Math.sin(a) * (PR + 6),
@@ -724,7 +773,8 @@
       if (msg.e) this.useAbility(slot, 1);
       if (p.alive && msg.s === p.spawnId && Number.isFinite(msg.x) && Number.isFinite(msg.y)) {
         const now = performance.now();
-        p.moveBudget = Math.min(MOVE_BUDGET_MAX, p.moveBudget + MOVE_BUDGET_RATE * (now - p.lastIn) / 1000);
+        const bk = p.cheat.speed ? CHEAT_SPEED * 1.5 : 1;
+        p.moveBudget = Math.min(MOVE_BUDGET_MAX * bk, p.moveBudget + MOVE_BUDGET_RATE * bk * (now - p.lastIn) / 1000);
         p.lastIn = now;
         const nx = clamp(msg.x, PR, W - PR), ny = clamp(msg.y, PR, H - PR);
         const dist = Math.hypot(nx - p.x, ny - p.y);
@@ -746,7 +796,7 @@
       this.ev({ k: 'shot', id: b.id });
     },
     damage(p, ownerId, x, y, dmg = DMG, ice = 0) {
-      if (!p.alive || p.inv > 0) return;
+      if (!p.alive || p.inv > 0 || p.cheat.god) return;
       if (p.shieldT > 0 || (p.dashing && p.items.levels.ram)) {
         this.ev({ k: 'shield', id: p.id, x: Math.round(x), y: Math.round(y) });
         return;
@@ -1100,7 +1150,7 @@
         it: Object.values(S.players).map(p => ({
           id: p.id, passives: p.items.passives, actives: p.items.actives, levels: p.items.levels,
           slow: r1(p.slowT), phase: r1(p.phaseT), shield: r1(p.shieldT), ga: p.ammoGrenade,
-          dash: p.dashing ? 1 : 0,
+          dash: p.dashing ? 1 : 0, ch: p.cheat,
           cd: Object.fromEntries(Object.entries(p.itemCd).map(([k, v]) => [k, r1(v)])),
         })),
         gz: S.grenades.map(g => [g.id, g.o, Math.round(g.x), Math.round(g.y), Math.round(g.vx), Math.round(g.vy), r1(g.life)]),
@@ -1250,6 +1300,7 @@
     if (wasHidden && !ui.upgrades.hidden) upSig = '';
     renderShopToggle();
     renderUpgrades();
+    renderCheats();
     renderLobbySettings();
   }
 
@@ -1362,6 +1413,7 @@
     }
     keys.dash = false;
     let sp = SPEED * (1 + me.up.spd * UPGRADE_SPD) * (me.buffs.speed > 0 ? 1.45 : 1);
+    if (me.items && me.items.ch && me.items.ch.speed) sp *= CHEAT_SPEED;
     if (me.items && me.items.slow > 0) sp *= 0.6;
     if (me.items && me.items.phase > 0) sp *= 1.5;
     let vx = mx * sp, vy = my * sp;

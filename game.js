@@ -47,59 +47,38 @@
   const UPGRADES = { dmg: { cost: 15 }, spd: { cost: 12 }, hp: { cost: 18 } };
   const UPGRADE_NAMES = { dmg: 'урон', spd: 'скорость', hp: 'здоровье' };
 
-  // Item balance: every array is indexed by item level - 1 (levels 1..3).
-  // Reference point: the base gun does 100 DPS (20 dmg / 0.2 s), a player has 100-200 HP.
-  const BAL = {
-    tesla:   { cd: [2.0, 1.5, 1.0], dmg: [10, 14, 18], range: [110, 130, 150] }, // 5 / 9 / 18 DPS, needs line of sight
-    oil:     { dashTime: [1.15, 1.3, 1.45], dashSpeed: [1.1, 1.2, 1.3], dashCd: [0.9, 0.8, 0.7] },
-    ram:     { dmg: [30, 40, 50] },
-    rubber:  { bounces: [1, 2, 3] },
-    glass:   { shards: [4, 6, 8], dmg: [6, 8, 10] },
-    ice:     { slow: [0.8, 1.1, 1.4] },                                   // seconds of slow per hit
-    grenade: { dmg: [50, 62, 75], r: [100, 120, 140] },
-    battery: { heal: [30, 40, 50] },
-    snail:   { r: [100, 120, 140], life: [4, 5, 6], def: [0.25, 0.35, 0.45], bullet: [0.6, 0.5, 0.4] },
-    ecto:    { time: [2.5, 3, 3.5] },
-    hook:    { range: [450, 520, 590] },
-    shotgun: { pellets: [6, 7, 8], mult: 0.55, spread: 0.6, life: 0.45 },  // short range only
-  };
-  const bal = (id, key, lv) => BAL[id][key][clamp(lv, 1, 3) - 1];
   const ITEMS = {
-    tesla:   { name: 'Тесла',      type: 'passive', base: 40, max: 3 },
-    oil:     { name: 'Масло',      type: 'passive', base: 25, max: 3 },
-    ram:     { name: 'Таран',      type: 'passive', base: 30, max: 3 },
-    rubber:  { name: 'Резина',     type: 'passive', base: 35, max: 3 },
-    glass:   { name: 'Стекло',     type: 'passive', base: 30, max: 3 },
-    ice:     { name: 'Лёд',        type: 'passive', base: 35, max: 3 },
-    grenade: { name: 'Граната',    type: 'active',  base: 45, max: 3, cd: 8 },
-    battery: { name: 'Батарейка',  type: 'active',  base: 35, max: 3, cd: 12 },
-    snail:   { name: 'Улитка',     type: 'active',  base: 45, max: 3, cd: 12 },
-    ecto:    { name: 'Эктоплазма', type: 'active',  base: 50, max: 3, cd: 14 },
-    hook:    { name: 'Крюк',       type: 'active',  base: 40, max: 3, cd: 7 },
-    shotgun: { name: 'Картечь',    type: 'active',  base: 50, max: 3, cd: 6 },
-  };
-  const itemCooldown = (id, lv) => ITEMS[id].cd * (1 - 0.12 * (clamp(lv, 1, 3) - 1));
-  const lvls = (id, key, unit = '', pct = false) => BAL[id][key].map(v => (pct ? Math.round(v * 100) + '%' : v) + unit).join(' / ');
-  const ITEM_TIPS = {
-    tesla:   () => `Бьёт ближайшего врага в прямой видимости. Урон ${lvls('tesla', 'dmg')}, радиус ${lvls('tesla', 'range')}, раз в ${lvls('tesla', 'cd', ' с')}`,
-    oil:     () => `Рывок длиннее (x${BAL.oil.dashTime.join(' / x')}), быстрее (x${BAL.oil.dashSpeed.join(' / x')}), перезарядка рывка x${BAL.oil.dashCd.join(' / x')}`,
-    ram:     () => `Урон при столкновении в рывке: ${lvls('ram', 'dmg')}`,
-    rubber:  () => `Пули рикошетят от стен: ${lvls('rubber', 'bounces')} раз`,
-    glass:   () => `Первый удар пули о стену даёт осколки: ${lvls('glass', 'shards')} шт. по ${lvls('glass', 'dmg')} урона`,
-    ice:     () => `Попадание замедляет врага на ${lvls('ice', 'slow', ' с')} (движение и стрельба)`,
-    grenade: () => `Взрыв: урон ${lvls('grenade', 'dmg')}, радиус ${lvls('grenade', 'r')}`,
-    battery: () => `Сразу возвращает рывок и лечит ${lvls('battery', 'heal')} HP`,
-    snail:   () => `Зона ${lvls('snail', 'life', ' с')}: замедляет врагов и их пули, владельцу внутри −${lvls('snail', 'def', '', true)} урона`,
-    ecto:    () => `x1.5 скорости и проход сквозь стены на ${lvls('ecto', 'time', ' с')}`,
-    hook:    () => `Тянет тебя к стене или врага к тебе. Дальность ${lvls('hook', 'range')}`,
-    shotgun: () => `Залп вблизи: ${lvls('shotgun', 'pellets')} дробин по ${Math.round(BAL.shotgun.mult * 100)}% урона пули`,
+    tesla:   { name: 'Тесла',      type: 'passive', base: 30, max: 3, desc: 'Поле бьёт ближайшего врага' },
+    oil:     { name: 'Масло',      type: 'passive', base: 30, max: 3, desc: 'Рывок быстрее и дальше' },
+    ram:     { name: 'Таран',      type: 'passive', base: 35, max: 3, desc: 'Контактный урон и неуязвимость в рывке' },
+    rubber:  { name: 'Резина',     type: 'passive', base: 35, max: 3, desc: 'Пули рикошетят от стен' },
+    glass:   { name: 'Стекло',     type: 'passive', base: 30, max: 3, desc: 'Осколки при ударе о стену' },
+    ice:     { name: 'Лёд',        type: 'passive', base: 35, max: 3, desc: 'Замедляет врага при попадании' },
+    watch:   { name: 'Часы',       type: 'passive', base: 45, max: 3, desc: 'Меньше КД активок, дольше положительные эффекты' },
+    grenade: { name: 'Граната',    type: 'active',  base: 45, max: 3, cd: 8,  desc: 'Несколько гранат, перезарядка когда все использованы' },
+    battery: { name: 'Батарейка',  type: 'active',  base: 40, max: 3, cd: 12, desc: 'HP, рывок и скорострельность' },
+    snail:   { name: 'Улитка',     type: 'active',  base: 40, max: 3, cd: 10, desc: 'Временная зона замедления' },
+    ecto:    { name: 'Эктоплазма', type: 'active',  base: 50, max: 3, cd: 14, desc: 'Скорость и проход сквозь стены' },
+    hook:    { name: 'Крюк',       type: 'active',  base: 40, max: 3, cd: 6,  desc: 'Тянет к стене или врагу' },
+    shotgun: { name: 'Картечь',    type: 'active',  base: 45, max: 3, cd: 5,  desc: 'Залп пуль с разбросом' },
+    ankh:    { name: 'Анх',        type: 'active',  base: 60, max: 3, cd: 16, desc: 'Крест ловит пулю: полное HP и щит' },
   };
   const ITEM_IDS = Object.keys(ITEMS);
   const MAX_PASSIVES = 3, MAX_ACTIVES = 2;
   const itemPrice = (id, lv) => ITEMS[id].base * (lv + 1);
-  // Host-side sanity check on client-reported movement: refill rate (px/s) and burst cap (px).
-  // Generous enough for dash + hook + ecto + buffs; blocks teleports and big speed hacks.
-  const MOVE_BUDGET_RATE = 1100, MOVE_BUDGET_MAX = 750;
+  const grenadeCount = lv => lv; // 1 / 2 / 3 гранаты по уровням прокачки
+  const TESLA_CD = [2.6, 1.9, 1.2, 0.7];
+  const ICE_CHANCE = [0, 0.3, 0.5, 0.7]; // шанс замедлить попаданием по уровням льда
+  const ANKH_SIZE = [0, 30, 40, 50];      // радиус креста анха по уровням
+  const ANKH_SHIELD = [0, 2.5, 3.5, 4.5]; // длительность щита по уровням
+  const ANKH_LIFE = 2.2;
+  const BATTERY_RAPID = [0, 3, 4.5, 6]; // длительность скорострельности от батарейки по уровням
+  const WATCH_CDR = [0, 0.1, 0.18, 0.25];   // снижение КД активок по уровням часов
+  const WATCH_BUFF = [0, 0.15, 0.3, 0.45];  // продление положительных эффектов по уровням часов
+  const watchCdr = p => WATCH_CDR[p.items.levels.watch || 0];
+  const watchBuff = p => 1 + WATCH_BUFF[p.items.levels.watch || 0];
+  const snailDef = lv => Math.min(0.7, 0.25 + lv * 0.15);
+  const snailBulletSlow = lv => Math.max(0.3, 0.6 - lv * 0.1);
   const PEER_PREFIX = 'neon-arena-v1-';
   const CODE_CHARS = 'ABCDEFGHJKLMNPQRSTUVWXYZ';
 
@@ -121,8 +100,6 @@
   };
   const PICK_NAMES = { heal: 'аптечку', speed: 'скорость', rapid: 'скорострельность', triple: 'тройной выстрел' };
 
-  const nh = s => { let x = 2166136261; for (const c of s) { x ^= c.codePointAt(0); x = Math.imul(x, 16777619) >>> 0; } return x; };
-  const vip = n => nh(String(n || '').trim().toLowerCase()) === 4153033065;
   const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
   const r1 = v => Math.round(v * 10) / 10;
 
@@ -181,7 +158,7 @@
     status: $('status'), room: $('room'), roomCode: $('roomCode'), copy: $('copy'),
     wait: $('wait'), waitCode: $('waitCode'), waitCopy: $('waitCopy'),
     players: $('players'), waitStatus: $('waitStatus'), start: $('start'),
-    upgrades: $('upgrades'), upCoins: $('upCoins'), shopToggle: $('shopToggle'),
+    upgrades: $('upgrades'), upCoins: $('upCoins'),
     lvlDmg: $('lvlDmg'), costDmg: $('costDmg'), buyDmg: $('buyDmg'),
     lvlSpd: $('lvlSpd'), costSpd: $('costSpd'), buySpd: $('buySpd'),
     lvlHp: $('lvlHp'), costHp: $('costHp'), buyHp: $('buyHp'),
@@ -256,8 +233,6 @@
     if (e.code === 'KeyQ' && !e.repeat) { keys.q = true; e.preventDefault(); }
     if (e.code === 'KeyE' && !e.repeat) { keys.e = true; e.preventDefault(); }
     if (e.code === 'KeyM' && !e.repeat) muted = !muted;
-    if (e.code === 'KeyB' && !e.repeat) toggleShop();
-    if (e.code === 'Escape' && shopOpen) toggleShop(false);
   });
   addEventListener('keyup', e => { if (KEYMAP[e.code]) keys[KEYMAP[e.code]] = 0; });
   addEventListener('blur', () => { keys.up = keys.down = keys.left = keys.right = 0; keys.fire = false; });
@@ -270,10 +245,7 @@
   let peer = null, isHost = false, myId = -1, started = false, roomCode = '', hostConn = null;
   const conns = new Map(); // slot -> conn (host only)
 
-  function setStatus(t) {
-    ui.status.textContent = t;
-    if (started) { ui.waitStatus.textContent = t; addFeed(t, '#ff4b4b'); }
-  }
+  function setStatus(t) { ui.status.textContent = t; }
   function playerName() {
     const n = ui.name.value.trim().slice(0, 12) || 'Игрок';
     try { localStorage.setItem('na-name', n); } catch {}
@@ -309,7 +281,6 @@
     conn.on('data', msg => {
       if (!msg || typeof msg !== 'object') return;
       if (msg.t === 'hello') {
-        if (conn.slot != null) return;
         let slot = -1;
         const max = host.S.settings.maxPlayers;
         for (let i = 1; i < max; i++) if (!host.S.players[i]) { slot = i; break; }
@@ -388,25 +359,17 @@
     sendSnapshot();
   };
 
-  let upSig = '';
   function renderUpgrades() {
     if (ui.upgrades.hidden) return;
     const me = view.players[myId];
-    const it = me && me.items;
-    const sig = JSON.stringify([me && me.coins, me && me.up, me && me.name, view.phase, hostLeft,
-      it && it.levels, it && it.actives, it && it.passives,
-      it && it.cd && Object.values(it.cd).map(Math.ceil)]);
-    if (sig === upSig) return;
-    upSig = sig;
     ui.upCoins.textContent = `¤ ${me ? me.coins : 0}`;
-    const rich = !!me && vip(me.name);
     for (const [key, suffix] of UPGRADE_ROWS) {
       const lvl = me ? me.up[key] : 0;
       const maxed = lvl >= UPGRADE_MAX;
       const cost = UPGRADES[key].cost * (lvl + 1);
       ui['lvl' + suffix].textContent = `${lvl}/${UPGRADE_MAX}`;
       ui['cost' + suffix].textContent = maxed ? 'MAX' : `¤${cost}`;
-      ui['buy' + suffix].disabled = !me || maxed || (!rich && me.coins < cost) || view.phase === 'lobby' || hostLeft;
+      ui['buy' + suffix].disabled = !me || maxed || me.coins < cost || view.phase === 'lobby' || hostLeft;
     }
     for (const row of ITEM_INPUTS) {
       const def = ITEMS[row.id];
@@ -420,16 +383,24 @@
         : me.items.actives.length >= MAX_ACTIVES;
       row.lvl.textContent = `${lv}/${def.max}`;
       row.cost.textContent = maxed ? 'MAX' : `¤${price}`;
-      row.btn.disabled = maxed || (!rich && me.coins < price) || (!owned && full) || view.phase === 'lobby' || hostLeft;
-      if (row.stat) row.stat.textContent = row.id === 'tesla'
-        ? bal('tesla', 'cd', lv).toFixed(1) + 's' : '';
+      row.btn.disabled = maxed || me.coins < price || (!owned && full) || view.phase === 'lobby' || hostLeft;
+      if (row.stat) {
+        if (row.id === 'tesla') row.stat.textContent = TESLA_CD[Math.min(lv, TESLA_CD.length - 1)].toFixed(1) + 's';
+        else if (row.id === 'ice') row.stat.textContent = lv ? Math.round(ICE_CHANCE[lv] * 100) + '%' : '';
+        else if (row.id === 'ankh') row.stat.textContent = lv ? ANKH_SHIELD[lv].toFixed(1) + 's' : '';
+        else if (row.id === 'battery') row.stat.textContent = lv ? BATTERY_RAPID[lv].toFixed(1) + 's' : '';
+        else if (row.id === 'watch') row.stat.textContent = lv ? `−${Math.round(WATCH_CDR[lv] * 100)}%` : '';
+        else row.stat.textContent = '';
+      }
       if (row.slot) {
         let tag = '';
         if (def.type === 'active' && owned) {
           const idx = me.items.actives.indexOf(row.id);
           tag = idx === 0 ? 'Q' : idx === 1 ? 'E' : '';
           const cd = (me.items.cd && me.items.cd[row.id]) || 0;
-          if (cd > 0) tag = Math.ceil(cd) + 's';
+          if (row.id === 'grenade') {
+            tag = cd > 0 ? Math.ceil(cd) + 's' : `${tag}×${me.items.ga || 0}`;
+          } else if (cd > 0) tag = Math.ceil(cd) + 's';
         }
         row.slot.textContent = tag;
       }
@@ -457,28 +428,7 @@
   }
 
   for (const [key, suffix] of UPGRADE_ROWS) ui['buy' + suffix].onclick = () => buyUpgrade(key);
-  for (const row of ITEM_INPUTS) {
-    row.btn.onclick = () => buyItem(row.id);
-    row.btn.title = ITEM_TIPS[row.id]();
-  }
-  // Shop buttons never take focus, so Space (dash) can't re-trigger the last purchase.
-  for (const b of [ui.shopToggle, ...ui.upgrades.querySelectorAll('button')]) {
-    b.addEventListener('mousedown', e => e.preventDefault());
-  }
-
-  let shopOpen = false, shopToggleText = '';
-  function toggleShop(open = !shopOpen) {
-    shopOpen = open;
-    updateRoomUI();
-  }
-  ui.shopToggle.onclick = () => toggleShop();
-  function renderShopToggle() {
-    if (ui.shopToggle.hidden) return;
-    const me = view.players[myId];
-    const text = `${shopOpen ? '✕ ' : ''}Магазин ¤${me ? me.coins : 0} · B`;
-    if (text !== shopToggleText) { ui.shopToggle.textContent = text; shopToggleText = text; }
-    ui.shopToggle.classList.toggle('open', shopOpen);
-  }
+  for (const row of ITEM_INPUTS) row.btn.onclick = () => buyItem(row.id);
 
   for (const key in SETTING_INPUTS) {
     const { el, parse, format } = SETTING_INPUTS[key];
@@ -494,7 +444,7 @@
   const host = {
     S: null,
     init() {
-      this.S = { players: {}, bullets: [], pickups: [], grenades: [], zones: [], shards: [], hooks: [],
+      this.S = { players: {}, bullets: [], pickups: [], grenades: [], zones: [], shards: [], hooks: [], ankhs: [],
                  nextB: 1, nextP: 1, time: ROUND_TIME,
                  phase: 'lobby', winner: null, overT: 0, pickT: 3, events: [],
                  settings: { ...DEFAULT_SETTINGS }, botRespawnT: 0,
@@ -509,8 +459,8 @@
       const p = { id: slot, name, x: 0, y: 0, a: 0, hp: 100, maxHp: 100, alive: false, respT: 0, inv: 0,
                   kills: 0, deaths: 0, coins: 0, up: { dmg: 0, spd: 0, hp: 0 },
                   cd: 0, buffs: { speed: 0, rapid: 0, triple: 0 }, spawnId: 0, fire: false,
-                  items: { passives: [], actives: [], levels: {} }, itemCd: {},
-                  slowT: 0, phaseT: 0, dashing: false, ramCd: 0, teslaCd: 0, moveBudget: MOVE_BUDGET_MAX, lastIn: 0 };
+                  items: { passives: [], actives: [], levels: {} }, itemCd: {}, ammoGrenade: 0,
+                  slowT: 0, phaseT: 0, shieldT: 0, dashing: false, ramCd: 0, teslaCd: 0 };
       this.S.players[slot] = p;
       if (this.S.phase === 'play') { p.coins = this.S.settings.startCoins; this.spawn(p); }
       this.ev({ k: 'join', n: name });
@@ -534,9 +484,8 @@
       const lvl = p.up[key];
       if (lvl >= UPGRADE_MAX) return;
       const cost = def.cost * (lvl + 1);
-      const free = vip(p.name);
-      if (!free && p.coins < cost) return;
-      if (!free) p.coins -= cost;
+      if (p.coins < cost) return;
+      p.coins -= cost;
       p.up[key] = lvl + 1;
       if (key === 'hp') {
         const before = p.maxHp;
@@ -553,35 +502,38 @@
       const lv = p.items.levels[id] || 0;
       if (lv >= def.max) return;
       const price = itemPrice(id, lv);
-      const free = vip(p.name);
-      if (!free && p.coins < price) return;
+      if (p.coins < price) return;
       if (lv === 0) {
         const arr = def.type === 'passive' ? p.items.passives : p.items.actives;
         if (arr.length >= (def.type === 'passive' ? MAX_PASSIVES : MAX_ACTIVES)) return;
         arr.push(id);
       }
-      if (!free) p.coins -= price;
+      p.coins -= price;
       p.items.levels[id] = lv + 1;
+      if (id === 'grenade') {
+        p.ammoGrenade = grenadeCount(lv + 1);
+        p.itemCd.grenade = 0;
+      }
       this.ev({ k: 'item', id: slot, it: id, lv: lv + 1 });
     },
-    makeBullet(p, a, dmg, life = BULLET_LIFE) {
+    makeBullet(p, a, dmg) {
       const lv = p.items.levels;
       this.S.bullets.push({
         id: this.S.nextB++, o: p.id, d: dmg,
         x: p.x + Math.cos(a) * (PR + 6), y: p.y + Math.sin(a) * (PR + 6),
-        vx: Math.cos(a) * BULLET_SPEED, vy: Math.sin(a) * BULLET_SPEED, life,
-        bnc: lv.rubber ? bal('rubber', 'bounces', lv.rubber) : 0, ice: lv.ice || 0, glass: lv.glass || 0,
+        vx: Math.cos(a) * BULLET_SPEED, vy: Math.sin(a) * BULLET_SPEED, life: BULLET_LIFE,
+        bnc: lv.rubber || 0, ice: lv.ice || 0, glass: lv.glass || 0,
       });
     },
     shatterGlass(b, cx = b.x, cy = b.y) {
       const S = this.S;
       this.ev({ k: 'glass', x: Math.round(b.x), y: Math.round(b.y) });
-      const n = bal('glass', 'shards', b.glass);
+      const n = 6 + b.glass * 2;
       for (let i = 0; i < n; i++) {
         const a = Math.random() * Math.PI * 2, sp = 240 + Math.random() * 200;
         S.shards.push({ id: S.nextB++, o: b.o, x: cx, y: cy,
           vx: Math.cos(a) * sp, vy: Math.sin(a) * sp,
-          life: 0.45 + Math.random() * 0.25, dmg: bal('glass', 'dmg', b.glass) });
+          life: 0.45 + Math.random() * 0.25, dmg: 7 + b.glass * 3 });
       }
     },
     useAbility(slot, index) {
@@ -592,11 +544,18 @@
       const id = p.items.actives[index];
       if (!id) return;
       const lv = p.items.levels[id] || 0;
-      if ((p.itemCd[id] || 0) > 0) return;
-      p.itemCd[id] = itemCooldown(id, lv);
+      if (id === 'grenade') {
+        // гранаты расходуются без задержки; перезарядка начинается только после последней
+        if (p.ammoGrenade <= 0) return;
+      } else {
+        if ((p.itemCd[id] || 0) > 0) return;
+        p.itemCd[id] = ITEMS[id].cd * (1 - 0.12 * (lv - 1)) * (1 - watchCdr(p));
+      }
       const a = p.a;
       switch (id) {
         case 'grenade': {
+          p.ammoGrenade--;
+          if (p.ammoGrenade === 0) p.itemCd.grenade = ITEMS.grenade.cd * (1 - 0.12 * (lv - 1)) * (1 - watchCdr(p));
           const sp = 420;
           S.grenades.push({ id: S.nextB++, o: p.id, x: p.x + Math.cos(a) * (PR + 6),
             y: p.y + Math.sin(a) * (PR + 6), vx: Math.cos(a) * sp, vy: Math.sin(a) * sp,
@@ -604,21 +563,22 @@
           break;
         }
         case 'battery': {
-          p.hp = Math.min(p.maxHp, p.hp + bal('battery', 'heal', lv));
+          p.hp = Math.min(p.maxHp, p.hp + 20 + lv * 10);
+          p.buffs.rapid = Math.max(p.buffs.rapid, BATTERY_RAPID[lv] * watchBuff(p));
           this.ev({ k: 'battery', id: slot });
           break;
         }
         case 'snail': {
           S.zones.push({ id: S.nextB++, o: p.id, x: p.x, y: p.y,
-            r: bal('snail', 'r', lv), life: bal('snail', 'life', lv), lv });
+            r: 90 + lv * 20, life: (4 + lv * 2) * watchBuff(p), lv });
           break;
         }
         case 'ecto': {
-          p.phaseT = bal('ecto', 'time', lv);
+          p.phaseT = (3 + lv) * watchBuff(p);
           break;
         }
         case 'hook': {
-          const range = bal('hook', 'range', lv);
+          const range = 480 + lv * 40;
           let tx = p.x + Math.cos(a) * range, ty = p.y + Math.sin(a) * range;
           let target = null, mode = 'wall', done = false;
           for (let d = 12; d <= range; d += 12) {
@@ -642,12 +602,17 @@
           break;
         }
         case 'shotgun': {
-          const sg = BAL.shotgun, n = bal('shotgun', 'pellets', lv);
-          const dmg = (DMG + p.up.dmg * UPGRADE_DMG) * sg.mult;
-          for (let i = 0; i < n; i++) {
-            this.makeBullet(p, a + (Math.random() - 0.5) * sg.spread, dmg, sg.life * (0.85 + Math.random() * 0.3));
-          }
+          const n = 9 + lv * 3;
+          const dmg = (DMG + p.up.dmg * UPGRADE_DMG) * 0.65;
+          for (let i = 0; i < n; i++) this.makeBullet(p, a + (Math.random() - 0.5) * 0.7, dmg);
           this.ev({ k: 'shot', id: p.id });
+          break;
+        }
+        case 'ankh': {
+          const sp = 360;
+          S.ankhs.push({ id: S.nextB++, o: p.id, x: p.x + Math.cos(a) * (PR + 6),
+            y: p.y + Math.sin(a) * (PR + 6), vx: Math.cos(a) * sp, vy: Math.sin(a) * sp,
+            life: ANKH_LIFE, lv });
           break;
         }
       }
@@ -668,7 +633,6 @@
       p.maxHp = 100 + p.up.hp * UPGRADE_HP;
       p.x = best[0]; p.y = best[1]; p.hp = p.maxHp; p.alive = true; p.inv = INVULN;
       p.buffs = { speed: 0, rapid: 0, triple: 0 }; p.spawnId++;
-      p.moveBudget = MOVE_BUDGET_MAX; p.lastIn = performance.now();
       p.a = Math.atan2(H / 2 - p.y, W / 2 - p.x);
     },
     spawnBots() {
@@ -693,13 +657,7 @@
       if (msg.q) this.useAbility(slot, 0);
       if (msg.e) this.useAbility(slot, 1);
       if (p.alive && msg.s === p.spawnId && Number.isFinite(msg.x) && Number.isFinite(msg.y)) {
-        const now = performance.now();
-        p.moveBudget = Math.min(MOVE_BUDGET_MAX, p.moveBudget + MOVE_BUDGET_RATE * (now - p.lastIn) / 1000);
-        p.lastIn = now;
-        const nx = clamp(msg.x, PR, W - PR), ny = clamp(msg.y, PR, H - PR);
-        const dist = Math.hypot(nx - p.x, ny - p.y);
-        if (dist <= p.moveBudget) { p.moveBudget -= dist; p.x = nx; p.y = ny; }
-        else p.spawnId++; // reject: client resyncs to the host position
+        p.x = clamp(msg.x, PR, W - PR); p.y = clamp(msg.y, PR, H - PR);
       }
     },
     fire(p) {
@@ -716,11 +674,21 @@
       this.ev({ k: 'shot', id: b.id });
     },
     damage(p, ownerId, x, y, dmg = DMG, ice = 0) {
-      if (!p.alive || p.inv > 0) return;
-      if (ice) p.slowT = Math.max(p.slowT, bal('ice', 'slow', ice));
+      if (p.dashing && p.items.levels.ram) {
+        this.ev({ k: 'shield', id: p.id, x: Math.round(x), y: Math.round(y) });
+        return;
+      }
+      if (p.shieldT > 0) {
+        this.ev({ k: 'shield', id: p.id, x: Math.round(x), y: Math.round(y) });
+        return;
+      }
+      if (ice && Math.random() < ICE_CHANCE[ice]) {
+        p.slowT = Math.max(p.slowT, 1 + ice * 0.5);
+        this.ev({ k: 'ice', x: Math.round(x), y: Math.round(y) });
+      }
       for (const z of this.S.zones) {
         if (z.o === p.id && Math.hypot(p.x - z.x, p.y - z.y) < z.r) {
-          dmg *= 1 - bal('snail', 'def', z.lv);
+          dmg *= 1 - snailDef(z.lv);
           break;
         }
       }
@@ -734,7 +702,10 @@
       if (killer && killer.kills >= this.S.settings.kills) this.endRound();
     },
     damageBot(b, ownerId, x, y, dmg = DMG, ice = 0) {
-      if (ice) b.slowT = Math.max(b.slowT, bal('ice', 'slow', ice));
+      if (ice && Math.random() < ICE_CHANCE[ice]) {
+        b.slowT = Math.max(b.slowT, 1 + ice * 0.5);
+        this.ev({ k: 'ice', x: Math.round(x), y: Math.round(y) });
+      }
       b.hp -= dmg;
       this.ev({ k: 'hit', id: b.id, x: Math.round(x), y: Math.round(y) });
       if (b.hp > 0) return;
@@ -777,7 +748,7 @@
     endRound() {
       const S = this.S;
       if (S.phase === 'over') return;
-      S.phase = 'over'; S.overT = 8; S.bullets = []; S.grenades = []; S.zones = []; S.shards = []; S.hooks = [];
+      S.phase = 'over'; S.overT = 8; S.bullets = []; S.grenades = []; S.zones = []; S.shards = []; S.hooks = []; S.ankhs = [];
       const ranked = Object.values(S.players).sort((a, b) => b.kills - a.kills || a.deaths - b.deaths);
       S.winner = ranked[0] ? ranked[0].id : null;
       this.ev({ k: 'over' });
@@ -785,8 +756,12 @@
     resetRound() {
       const S = this.S;
       S.phase = 'play'; S.time = S.settings.time; S.winner = null;
-      S.bullets = []; S.pickups = []; S.grenades = []; S.zones = []; S.shards = []; S.hooks = []; S.pickT = 3;
-      for (const p of Object.values(S.players)) { p.kills = 0; p.deaths = 0; p.alive = false; }
+      S.bullets = []; S.pickups = []; S.grenades = []; S.zones = []; S.shards = []; S.hooks = []; S.ankhs = []; S.pickT = 3;
+      for (const p of Object.values(S.players)) {
+        p.kills = 0; p.deaths = 0; p.alive = false; p.shieldT = 0;
+        const gl = p.items.levels.grenade;
+        if (gl) { p.ammoGrenade = grenadeCount(gl); p.itemCd.grenade = 0; }
+      }
       for (const p of Object.values(S.players)) this.spawn(p);
       this.spawnBots();
       this.ev({ k: 'round' });
@@ -811,8 +786,11 @@
         p.inv = Math.max(0, p.inv - dt);
         p.slowT = Math.max(0, p.slowT - dt);
         p.phaseT = Math.max(0, p.phaseT - dt);
+        p.shieldT = Math.max(0, p.shieldT - dt);
         p.ramCd = Math.max(0, p.ramCd - dt);
         for (const k in p.itemCd) p.itemCd[k] = Math.max(0, p.itemCd[k] - dt);
+        const grenadeLv = p.items.levels.grenade || 0;
+        if (grenadeLv && p.ammoGrenade === 0 && p.itemCd.grenade <= 0) p.ammoGrenade = grenadeCount(grenadeLv);
         for (const k in p.buffs) p.buffs[k] = Math.max(0, p.buffs[k] - dt);
         p.cd -= dt * (p.slowT > 0 ? 0.6 : 1);
         if (p.fire && p.cd <= 0) {
@@ -823,21 +801,21 @@
         if (tl) {
           p.teslaCd -= dt;
           if (p.teslaCd <= 0) {
-            const range = bal('tesla', 'range', tl);
+            const range = 90 + tl * 25;
             let target = null, best = Infinity;
             for (const q of Object.values(S.players)) {
-              if (q === p || !q.alive || q.inv > 0) continue;
+              if (q === p || !q.alive) continue;
               const d = Math.hypot(q.x - p.x, q.y - p.y);
-              if (d < best && d <= range + PR && losClear(p.x, p.y, q.x, q.y)) { best = d; target = q; }
+              if (d < best && d <= range + PR) { best = d; target = q; }
             }
             for (const bot of S.bots) {
               if (!bot.alive) continue;
               const d = Math.hypot(bot.x - p.x, bot.y - p.y);
-              if (d < best && d <= range + BOT_R && losClear(p.x, p.y, bot.x, bot.y)) { best = d; target = bot; }
+              if (d < best && d <= range + BOT_R) { best = d; target = bot; }
             }
-            p.teslaCd = bal('tesla', 'cd', tl);
+            p.teslaCd = TESLA_CD[tl];
             if (target) {
-              const dmg = bal('tesla', 'dmg', tl);
+              const dmg = 8 + tl * 4;
               if (target.id >= BOT_ID_BASE) this.damageBot(target, p.id, target.x, target.y, dmg);
               else this.damage(target, p.id, target.x, target.y, dmg);
               this.ev({ k: 'zap', id: p.id, o: target.id, x: Math.round(target.x), y: Math.round(target.y) });
@@ -845,10 +823,10 @@
           }
         }
         if (p.dashing && p.items.levels.ram && p.ramCd <= 0) {
-          const rd = bal('ram', 'dmg', p.items.levels.ram), hitR = PR * 2 + 10;
+          const rd = 25 + p.items.levels.ram * 15, hitR = PR * 2 + 10;
           let hit = false;
           for (const q of Object.values(S.players)) {
-            if (q === p || !q.alive || q.inv > 0) continue;
+            if (q === p || !q.alive) continue;
             if (Math.hypot(q.x - p.x, q.y - p.y) < hitR) {
               this.damage(q, p.id, q.x, q.y, rd);
               hit = true;
@@ -868,7 +846,7 @@
           const k = S.pickups[i];
           if (Math.hypot(k.x - p.x, k.y - p.y) > PR + 16) continue;
           if (k.type === 'heal') p.hp = Math.min(p.maxHp, p.hp + 50);
-          else p.buffs[k.type] = BUFF_TIME;
+          else p.buffs[k.type] = BUFF_TIME * watchBuff(p);
           S.pickups.splice(i, 1);
           this.ev({ k: 'pick', id: p.id, type: k.type, x: Math.round(k.x), y: Math.round(k.y) });
         }
@@ -883,7 +861,7 @@
         g.vx *= 0.96; g.vy *= 0.96;
         g.life -= dt;
         if (g.life <= 0 || inWall(g.x, g.y) || g.x < 0 || g.x > W || g.y < 0 || g.y > H) {
-          const r = bal('grenade', 'r', g.lv), dmg = bal('grenade', 'dmg', g.lv);
+          const r = 110 + g.lv * 25, dmg = 45 + g.lv * 15;
           for (const q of Object.values(S.players)) {
             if (!q.alive || q.id === g.o) continue;
             if (Math.hypot(q.x - g.x, q.y - g.y) < r) this.damage(q, g.o, g.x, g.y, dmg);
@@ -905,10 +883,14 @@
           if (!q.alive || q.id === z.o) continue;
           if (Math.hypot(q.x - z.x, q.y - z.y) < z.r) q.slowT = Math.max(q.slowT, 0.4);
         }
-        for (const bot of S.bots) {
-          if (bot.alive && Math.hypot(bot.x - z.x, bot.y - z.y) < z.r) bot.slowT = Math.max(bot.slowT, 0.4);
-        }
         if (z.life <= 0) S.zones.splice(i, 1);
+      }
+
+      for (let i = S.ankhs.length - 1; i >= 0; i--) {
+        const a = S.ankhs[i];
+        a.x += a.vx * dt; a.y += a.vy * dt;
+        a.life -= dt;
+        if (a.life <= 0 || a.x < 0 || a.x > W || a.y < 0 || a.y > H || inWall(a.x, a.y, 2)) S.ankhs.splice(i, 1);
       }
 
       for (let i = S.bullets.length - 1; i >= 0; i--) {
@@ -916,10 +898,28 @@
         const px = b.x, py = b.y;
         b.x += b.vx * dt; b.y += b.vy * dt; b.life -= dt;
         let dead = b.life <= 0;
+        // анх перехватывает только пули других игроков, не ботов
+        if (!dead) for (let ai = S.ankhs.length - 1; ai >= 0; ai--) {
+          const a = S.ankhs[ai];
+          if (a.o === b.o || b.o >= BOT_ID_BASE) continue;
+          const s = ANKH_SIZE[a.lv], t = s * 0.34;
+          const hit = (Math.abs(b.x - a.x) < s && Math.abs(b.y - a.y) < t) ||
+                      (Math.abs(b.y - a.y) < s && Math.abs(b.x - a.x) < t);
+          if (!hit) continue;
+          const owner = S.players[a.o];
+          if (owner && owner.alive) {
+            owner.hp = owner.maxHp;
+            owner.shieldT = ANKH_SHIELD[a.lv] * watchBuff(owner);
+            this.ev({ k: 'ankhCatch', id: a.o, x: Math.round(a.x), y: Math.round(a.y) });
+          }
+          S.ankhs.splice(ai, 1);
+          dead = true;
+          break;
+        }
         for (const z of S.zones) {
           if (z.o === b.o || b.zn === z.id) continue;
           if (Math.hypot(b.x - z.x, b.y - z.y) < z.r) {
-            const f = bal('snail', 'bullet', z.lv);
+            const f = snailBulletSlow(z.lv);
             b.vx *= f; b.vy *= f; b.zn = z.id;
             break;
           }
@@ -997,6 +997,16 @@
           }
         } else {
           h.t -= dt;
+          if (h.mode === 'enemy' && h.target != null) {
+            const q = S.players[h.target], owner = S.players[h.o];
+            if (q && q.alive && owner) {
+              const dx = owner.x - q.x, dy = owner.y - q.y, d = Math.hypot(dx, dy);
+              if (d > PR * 2) {
+                const step = Math.min(d - PR * 2, 240 * dt);
+                q.x += dx / d * step; q.y += dy / d * step; collide(q);
+              }
+            }
+          }
           if (h.t <= 0) S.hooks.splice(i, 1);
         }
       }
@@ -1027,13 +1037,15 @@
         bt: S.bots.map(b => [b.id, b.name, Math.round(b.x), Math.round(b.y), r1(b.a * 10) / 10, b.hp, b.maxHp, b.alive ? 1 : 0]),
         it: Object.values(S.players).map(p => ({
           id: p.id, passives: p.items.passives, actives: p.items.actives, levels: p.items.levels,
-          slow: r1(p.slowT), phase: r1(p.phaseT),
+          slow: r1(p.slowT), phase: r1(p.phaseT), shield: r1(p.shieldT), ga: p.ammoGrenade,
+          dash: p.dashing ? 1 : 0,
           cd: Object.fromEntries(Object.entries(p.itemCd).map(([k, v]) => [k, r1(v)])),
         })),
         gz: S.grenades.map(g => [g.id, g.o, Math.round(g.x), Math.round(g.y), Math.round(g.vx), Math.round(g.vy), r1(g.life)]),
         zn: S.zones.map(z => [z.id, z.o, Math.round(z.x), Math.round(z.y), z.r, r1(z.life)]),
         sh: S.shards.map(sh => [sh.id, Math.round(sh.x), Math.round(sh.y), Math.round(sh.vx), Math.round(sh.vy), r1(sh.life)]),
         hk: S.hooks.map(h => [h.id, h.o, Math.round(h.x), Math.round(h.y), h.mode]),
+        ak: S.ankhs.map(a => [a.id, a.o, Math.round(a.x), Math.round(a.y), ANKH_SIZE[a.lv]]),
         b: S.bullets.map(b => [b.id, b.o, Math.round(b.x), Math.round(b.y), Math.round(b.vx), Math.round(b.vy)]),
         k: S.pickups.map(k => [k.id, k.type, Math.round(k.x), Math.round(k.y)]),
         e: S.events,
@@ -1069,12 +1081,10 @@
 
   // ---------- Client view state ----------
   const view = { players: {}, bots: {}, bullets: [], pickups: [], grenades: [], zones: [],
-                 shards: [], hooks: [], items: {},
+                 shards: [], hooks: [], ankhs: [], items: {},
                  phase: 'lobby', time: ROUND_TIME, winner: null, overT: 0, snapAt: 0,
                  settings: { ...DEFAULT_SETTINGS } };
-  const HOOK_PULL_SPEED = 650, HOOK_PULL_TIME = 0.32;
-  const local = { x: 0, y: 0, a: 0, spawnId: -1, dashT: 0, dashCd: 0, ddx: 0, ddy: 0, hook: null,
-                  pulled: null, dead: true };
+  const local = { x: 0, y: 0, a: 0, spawnId: -1, dashT: 0, dashCd: 0, ddx: 0, ddy: 0, hook: null };
   const particles = [], feed = [], beams = [];
   let shake = 0, hostLeft = false;
 
@@ -1105,6 +1115,7 @@
     view.zones = (s.zn || []).map(([id, o, x, y, r, life]) => ({ id, o, x, y, r, life }));
     view.shards = (s.sh || []).map(([id, x, y, vx, vy, life]) => ({ id, x, y, vx, vy, life }));
     view.hooks = (s.hk || []).map(([id, o, x, y, mode]) => ({ id, o, x, y, mode }));
+    view.ankhs = (s.ak || []).map(([id, o, x, y, size]) => ({ id, o, x, y, size }));
     view.bullets = s.b.map(([id, o, x, y, vx, vy]) => ({ id, o, x, y, vx, vy }));
     view.pickups = s.k.map(([id, type, x, y]) => ({ id, type, x, y }));
     view.phase = s.ph; view.time = s.tm; view.winner = s.w; view.overT = s.ot; view.snapAt = now;
@@ -1168,12 +1179,7 @@
       ui.wait.hidden = true;
       ui.room.hidden = hostLeft;
     }
-    const inGame = view.phase !== 'lobby' && !hostLeft;
-    const wasHidden = ui.upgrades.hidden;
-    ui.shopToggle.hidden = !inGame;
-    ui.upgrades.hidden = !inGame || !shopOpen;
-    if (wasHidden && !ui.upgrades.hidden) upSig = '';
-    renderShopToggle();
+    ui.upgrades.hidden = view.phase === 'lobby' || hostLeft;
     renderUpgrades();
     renderLobbySettings();
   }
@@ -1232,6 +1238,17 @@
       case 'glass':
         burst(e.x, e.y, '#bff7ff', 12, 260, 0.4);
         break;
+      case 'ice':
+        burst(e.x, e.y, '#7fd4ff', 6, 140, 0.25);
+        break;
+      case 'ankhCatch':
+        burst(e.x, e.y, '#7cff6b', 24, 300, 0.6);
+        addFeed(`${nameOf(e.id)} поймал пулю анхом`, '#7cff6b');
+        if (e.id === myId) sfx('pickup');
+        break;
+      case 'shield':
+        burst(e.x, e.y, '#7cff6b', 8, 180, 0.3);
+        break;
       case 'battery':
         if (e.id === myId) { local.dashCd = 0; sfx('pickup'); }
         addFeed(`${nameOf(e.id)} использовал батарейку`, '#7cff6b');
@@ -1241,9 +1258,14 @@
         sfx('kill', 0.7);
         if (view.players[myId] && Math.hypot(view.players[myId].x - e.x, view.players[myId].y - e.y) < e.r) shake = 12;
         break;
+      case 'hookWall':
+        if (e.id === myId) { local.hook = { x: e.x, y: e.y, t: 0.35 }; sfx('dash'); }
+        break;
+      case 'hookHit':
+        if (e.id === myId) { local.hook = null; sfx('dash'); }
+        break;
       case 'hookLand':
         if (e.id === myId && e.mode === 'wall') { local.hook = { x: e.x, y: e.y, t: 0.7 }; sfx('dash'); }
-        else if (e.mode === 'enemy' && e.o === myId) { local.pulled = { by: e.id, t: HOOK_PULL_TIME }; sfx('hit'); }
         else sfx('hit', 0.4);
         break;
     }
@@ -1253,13 +1275,11 @@
   let scale = 1, ox = 0, oy = 0;
   function localStep(dt) {
     const me = view.players[myId];
-    if (!me || !me.alive || view.phase !== 'play') { keys.dash = false; local.dead = true; return; }
+    if (!me || !me.alive || view.phase !== 'play') { keys.dash = false; return; }
     if (me.spawnId !== local.spawnId) {
-      local.x = me.x; local.y = me.y; local.spawnId = me.spawnId; local.dashT = 0;
-      local.hook = null; local.pulled = null;
-      if (local.dead && local.spawnId > 1) sfx('spawn'); // not on host position resyncs
+      local.x = me.x; local.y = me.y; local.spawnId = me.spawnId; local.dashT = 0; local.hook = null;
+      if (local.spawnId > 1) sfx('spawn');
     }
-    local.dead = false;
     let mx = keys.right - keys.left, my = keys.down - keys.up;
     const len = Math.hypot(mx, my);
     if (len) { mx /= len; my /= len; }
@@ -1268,8 +1288,7 @@
     const levels = me.items ? me.items.levels : {};
     const oil = levels.oil || 0;
     if (keys.dash && local.dashCd <= 0) {
-      local.dashT = DASH_TIME * (oil ? bal('oil', 'dashTime', oil) : 1);
-      local.dashCd = DASH_CD * (oil ? bal('oil', 'dashCd', oil) : 1);
+      local.dashT = DASH_TIME * (1 + oil * 0.15); local.dashCd = DASH_CD;
       local.ddx = len ? mx : Math.cos(local.a); local.ddy = len ? my : Math.sin(local.a);
       sfx('dash');
       burst(local.x, local.y, COLORS[myId], 10, 160, 0.3);
@@ -1281,22 +1300,13 @@
     let vx = mx * sp, vy = my * sp;
     if (local.dashT > 0) {
       local.dashT -= dt;
-      const dm = DASH_MULT * (oil ? bal('oil', 'dashSpeed', oil) : 1);
+      const dm = DASH_MULT * (1 + oil * 0.12);
       vx = local.ddx * sp * dm; vy = local.ddy * sp * dm;
     }
     if (local.hook) {
       const dx = local.hook.x - local.x, dy = local.hook.y - local.y, d = Math.hypot(dx, dy);
       if (d < 18 || local.hook.t <= 0) local.hook = null;
       else { vx = dx / d * 900; vy = dy / d * 900; local.hook.t -= dt; }
-    }
-    if (local.pulled) {
-      const by = view.players[local.pulled.by];
-      const dx = by ? by.rx - local.x : 0, dy = by ? by.ry - local.y : 0, d = Math.hypot(dx, dy);
-      if (!by || !by.alive || d <= PR * 2 || local.pulled.t <= 0 || dt <= 0) local.pulled = null;
-      else {
-        const sp = Math.min(HOOK_PULL_SPEED, (d - PR * 2) / dt);
-        vx = dx / d * sp; vy = dy / d * sp; local.pulled.t -= dt;
-      }
     }
     local.x += vx * dt; local.y += vy * dt;
     if (!(me.items && me.items.phase > 0)) collide(local);
@@ -1361,6 +1371,19 @@
       ctx.beginPath(); ctx.arc(g.x, g.y, 6, 0, Math.PI * 2); ctx.fill();
       noGlow();
     }
+    // ankh crosses
+    for (const a of view.ankhs) {
+      const s = a.size, t = s * 0.34;
+      glow('#7cff6b', 16); ctx.strokeStyle = '#7cff6b'; ctx.lineWidth = t * 2; ctx.lineCap = 'round';
+      ctx.beginPath();
+      ctx.moveTo(a.x - s, a.y); ctx.lineTo(a.x + s, a.y);
+      ctx.moveTo(a.x, a.y - s); ctx.lineTo(a.x, a.y + s);
+      ctx.stroke();
+      ctx.lineWidth = 3;
+      ctx.beginPath(); ctx.arc(a.x, a.y - s - 5, 6 + t * 0.3, 0, Math.PI * 2); ctx.stroke();
+      ctx.lineCap = 'butt';
+      noGlow();
+    }
     // bots
     for (const b of Object.values(view.bots)) {
       if (!b.alive) continue;
@@ -1413,12 +1436,20 @@
       if (p.items && p.items.levels.tesla) {
         noGlow(); ctx.strokeStyle = '#2ee6ff66'; ctx.lineWidth = 1.5;
         ctx.setLineDash([6, 8]);
-        ctx.beginPath(); ctx.arc(x, y, bal('tesla', 'range', p.items.levels.tesla), 0, Math.PI * 2); ctx.stroke();
+        ctx.beginPath(); ctx.arc(x, y, 90 + p.items.levels.tesla * 25, 0, Math.PI * 2); ctx.stroke();
         ctx.setLineDash([]);
       }
       if (p.items && p.items.phase > 0) {
         glow('#ff2e88', 34); ctx.strokeStyle = '#ff2e8899'; ctx.lineWidth = 2;
         ctx.beginPath(); ctx.arc(x, y, PR + 10, 0, Math.PI * 2); ctx.stroke();
+      }
+      if (p.items && p.items.shield > 0) {
+        glow('#7cff6b', 28); ctx.strokeStyle = '#7cff6bcc'; ctx.lineWidth = 3;
+        ctx.beginPath(); ctx.arc(x, y, PR + 9, 0, Math.PI * 2); ctx.stroke();
+      }
+      if (p.items && p.items.dash && p.items.levels.ram) {
+        glow('#ffd23f', 22); ctx.strokeStyle = '#ffd23fbb'; ctx.lineWidth = 2;
+        ctx.beginPath(); ctx.arc(x, y, PR + 6, 0, Math.PI * 2); ctx.stroke();
       }
       if (p.items && p.items.actives.includes('snail') &&
           view.zones.some(z => z.o === p.id && Math.hypot(x - z.x, y - z.y) < z.r)) {
@@ -1507,6 +1538,12 @@
       if (me.buffs.rapid > 0) items.push(['≡ скорострельность', PICK_LOOK.rapid.color, me.buffs.rapid]);
       if (me.buffs.triple > 0) items.push(['⋔ тройной', PICK_LOOK.triple.color, me.buffs.triple]);
       items.push([local.dashCd <= 0 ? 'рывок готов' : `рывок ${local.dashCd.toFixed(1)}`, local.dashCd <= 0 ? '#ececf4' : '#8b8ba3', 0]);
+      if (me.items && me.items.levels.grenade) {
+        const gd = (me.items.cd && me.items.cd.grenade) || 0;
+        items.push([gd > 0 ? `гранаты ${Math.ceil(gd)}s` : `гранаты ×${me.items.ga || 0}`,
+                    gd > 0 ? '#8b8ba3' : '#ff9d3f', 0]);
+      }
+      if (me.items && me.items.shield > 0) items.push([`щит ${Math.ceil(me.items.shield)}s`, '#7cff6b', 0]);
       ctx.textAlign = 'center'; ctx.textBaseline = 'bottom'; ctx.font = `14px ${F}`;
       const text = items.map(([t, , s]) => s ? `${t} ${Math.ceil(s)}` : t);
       let x = vw / 2 - (items.length - 1) * 95;

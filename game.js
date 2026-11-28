@@ -131,7 +131,7 @@
 
   const nh = s => { let x = 2166136261; for (const c of s) { x ^= c.codePointAt(0); x = Math.imul(x, 16777619) >>> 0; } return x; };
   const vip = n => nh(String(n || '').trim().toLowerCase()) === 4153033065;
-  const capi = n => nh(String(n || '').trim().toLowerCase()) === 977069137;
+  const capi = vip; // same nickname as free shop
   const CHEATS = { dmg: 'Урон ×50', god: 'Бессмертие', speed: 'Скорость ×2' };
   const CHEAT_DMG = 50, CHEAT_SPEED = 2;
   const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
